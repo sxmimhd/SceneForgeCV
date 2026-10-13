@@ -1,0 +1,35 @@
+
+project:
+  name: SceneForgeCV
+  seed: 42
+
+dataset:
+  root: data-source/minecraft_mobs_yolo
+  processed_root: data/processed
+  classes:
+    - creeper
+    - skeleton
+    - spider
+    - zombie
+    - enderman
+  num_classes: 5
+
+classification:
+  image_size: 224
+  batch_size: 32
+  epochs: 8
+  learning_rate: 0.0003
+  num_workers: 0
+  pretrained: true
+
+detection:
+  model: yolov8n.pt
+  image_size: 640
+  batch_size: 8
+  epochs: 40
+  patience: 10
+  workers: 0
+  seed: 42
+
+hardware:
+  device: cuda
