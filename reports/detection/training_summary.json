@@ -1,0 +1,16 @@
+{
+  "model": "yolov8n.pt",
+  "dataset": "C:\\Users\\samym\\Desktop\\Projects\\SceneForgeCV\\data-source\\minecraft_mobs_yolo\\data.yaml",
+  "classes": [
+    "creeper",
+    "skeleton",
+    "spider",
+    "zombie",
+    "enderman"
+  ],
+  "epochs_configured": 40,
+  "run_directory": "C:\\Users\\samym\\Desktop\\Projects\\SceneForgeCV\\runs\\detection\\yolov8n_minecraft_mobs",
+  "best_weights": "C:\\Users\\samym\\Desktop\\Projects\\SceneForgeCV\\runs\\detection\\yolov8n_minecraft_mobs\\weights\\best.pt",
+  "last_weights": "C:\\Users\\samym\\Desktop\\Projects\\SceneForgeCV\\runs\\detection\\yolov8n_minecraft_mobs\\weights\\last.pt",
+  "metrics": {}
+}
