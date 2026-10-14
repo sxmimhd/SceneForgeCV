@@ -1,0 +1,45 @@
+{
+  "creeper": {
+    "precision": 1.0,
+    "recall": 0.9920634920634921,
+    "f1-score": 0.9960159362549801,
+    "support": 126.0
+  },
+  "skeleton": {
+    "precision": 0.9945945945945946,
+    "recall": 0.9787234042553191,
+    "f1-score": 0.9865951742627346,
+    "support": 188.0
+  },
+  "spider": {
+    "precision": 0.9801980198019802,
+    "recall": 0.9801980198019802,
+    "f1-score": 0.9801980198019802,
+    "support": 101.0
+  },
+  "zombie": {
+    "precision": 0.9804878048780488,
+    "recall": 1.0,
+    "f1-score": 0.9901477832512315,
+    "support": 201.0
+  },
+  "enderman": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 32.0
+  },
+  "accuracy": 0.9891975308641975,
+  "macro avg": {
+    "precision": 0.9910560838549248,
+    "recall": 0.9901969832241584,
+    "f1-score": 0.9905913827141852,
+    "support": 648.0
+  },
+  "weighted avg": {
+    "precision": 0.9892929514880734,
+    "recall": 0.9891975308641975,
+    "f1-score": 0.9891938351281159,
+    "support": 648.0
+  }
+}

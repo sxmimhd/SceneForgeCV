@@ -3,9 +3,8 @@ import json
 import random
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import numpy as np
 import torch
 import yaml
@@ -89,11 +88,38 @@ def main():
     train_ds = datasets.ImageFolder(train_dir, transform=train_transform)
     val_ds = datasets.ImageFolder(val_dir, transform=val_transform)
 
-    if train_ds.classes != classes or val_ds.classes != classes:
+    if train_ds.classes != val_ds.classes:
         raise ValueError(
-            f"Class mismatch. Expected {classes}; "
-            f"train={train_ds.classes}; val={val_ds.classes}"
+            f"Train/validation class mismatch: "
+            f"{train_ds.classes} vs {val_ds.classes}"
         )
+
+    if set(train_ds.classes) != set(classes):
+        raise ValueError(
+            f"Configured classes {classes} do not match "
+            f"dataset classes {train_ds.classes}"
+        )
+
+    # Use the configured class order throughout the project.
+    class_to_index = {
+        name: index for index, name in enumerate(classes)
+    }
+
+    train_ds.classes = classes
+    train_ds.class_to_idx = class_to_index
+    train_ds.samples = [
+        (path, class_to_index[Path(path).parent.name])
+        for path, _ in train_ds.samples
+    ]
+    train_ds.targets = [label for _, label in train_ds.samples]
+
+    val_ds.classes = classes
+    val_ds.class_to_idx = class_to_index
+    val_ds.samples = [
+        (path, class_to_index[Path(path).parent.name])
+        for path, _ in val_ds.samples
+    ]
+    val_ds.targets = [label for _, label in val_ds.samples]
 
     if len(train_ds) == 0 or len(val_ds) == 0:
         raise RuntimeError("Training or validation dataset is empty.")
@@ -247,59 +273,95 @@ def main():
     cm = confusion_matrix(
         best_targets, best_predictions, labels=list(range(len(classes)))
     )
-    fig, ax = plt.subplots(figsize=(8, 7))
-    display = ax.imshow(cm, cmap="Blues")
-    ax.set(
-        xticks=range(len(classes)),
-        yticks=range(len(classes)),
-        xticklabels=classes,
-        yticklabels=classes,
-        xlabel="Predicted class",
-        ylabel="True class",
+    fig = go.Figure(
+    data=go.Heatmap(
+        z=cm,
+        x=classes,
+        y=classes,
+        colorscale="Blues",
+        text=cm,
+        texttemplate="%{text}",
+        hovertemplate=(
+            "Actual: %{y}<br>"
+            "Predicted: %{x}<br>"
+            "Count: %{z}<extra></extra>"
+        ),
+    )
+    )
+
+    fig.update_layout(
         title="ResNet-18 — Validation Confusion Matrix",
+        xaxis_title="Predicted class",
+        yaxis_title="True class",
+        template="plotly_dark",
     )
-    plt.setp(ax.get_xticklabels(), rotation=35, ha="right")
-    fig.colorbar(display, ax=ax)
 
-    for row in range(len(classes)):
-        for col in range(len(classes)):
-            ax.text(col, row, str(cm[row, col]), ha="center", va="center")
-
-    fig.tight_layout()
-    fig.savefig(OUTPUT / "confusion_matrix.png", dpi=160)
-    plt.close(fig)
-
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-    axes[0].plot(
-        [x["epoch"] for x in history],
-        [x["train_loss"] for x in history],
-        label="Train",
+    fig.write_html(
+        str(OUTPUT / "confusion_matrix.html"),
+        include_plotlyjs=True,
     )
-    axes[0].plot(
-        [x["epoch"] for x in history],
-        [x["val_loss"] for x in history],
-        label="Validation",
+    fig = make_subplots(
+    rows=1,
+    cols=2,
+    subplot_titles=("Training and Validation Loss", "Accuracy"),
     )
-    axes[0].set(title="Loss", xlabel="Epoch", ylabel="Loss")
-    axes[0].legend()
 
-    axes[1].plot(
-        [x["epoch"] for x in history],
-        [x["train_accuracy"] for x in history],
-        label="Train",
+    epochs_list = [item["epoch"] for item in history]
+
+    fig.add_trace(
+        go.Scatter(
+            x=epochs_list,
+            y=[item["train_loss"] for item in history],
+            mode="lines+markers",
+            name="Train Loss",
+        ),
+        row=1,
+        col=1,
     )
-    axes[1].plot(
-        [x["epoch"] for x in history],
-        [x["val_accuracy"] for x in history],
-        label="Validation",
+
+    fig.add_trace(
+        go.Scatter(
+            x=epochs_list,
+            y=[item["val_loss"] for item in history],
+            mode="lines+markers",
+            name="Validation Loss",
+        ),
+        row=1,
+        col=1,
     )
-    axes[1].set(title="Accuracy", xlabel="Epoch", ylabel="Accuracy")
-    axes[1].legend()
 
-    fig.tight_layout()
-    fig.savefig(OUTPUT / "training_curves.png", dpi=160)
-    plt.close(fig)
+    fig.add_trace(
+        go.Scatter(
+            x=epochs_list,
+            y=[item["train_accuracy"] for item in history],
+            mode="lines+markers",
+            name="Train Accuracy",
+        ),
+        row=1,
+        col=2,
+    )
 
+    fig.add_trace(
+        go.Scatter(
+            x=epochs_list,
+            y=[item["val_accuracy"] for item in history],
+            mode="lines+markers",
+            name="Validation Accuracy",
+        ),
+        row=1,
+        col=2,
+    )
+
+    fig.update_layout(
+        title="SceneForge CV — ResNet-18 Training",
+        template="plotly_dark",
+        height=500,
+    )
+
+    fig.write_html(
+        str(OUTPUT / "training_curves.html"),
+        include_plotlyjs=True,
+    )
     summary = {
         "best_val_accuracy": float(best_accuracy),
         "best_epoch": int(
