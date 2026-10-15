@@ -13,7 +13,7 @@ OUTPUT_DIR = ROOT / "reports" / "figures"
 
 
 def load_report() -> dict:
-    if not REPORT_PATH.exists():
+    if not REPORT_PATH.is_file():
         raise FileNotFoundError(
             f"Evaluation report not found: {REPORT_PATH}\n"
             "Run src/evaluate_detector.py first."
@@ -24,6 +24,9 @@ def load_report() -> dict:
 
 
 def load_class_order() -> list[str]:
+    if not CONFIG_PATH.is_file():
+        raise FileNotFoundError(f"Config not found: {CONFIG_PATH}")
+
     with CONFIG_PATH.open("r", encoding="utf-8") as file:
         config = yaml.safe_load(file)
 
@@ -42,7 +45,7 @@ def create_comparison_chart(
 
     for metric_key, label in zip(metric_keys, labels):
         values = [
-            per_class[class_name][metric_key]
+            float(per_class[class_name][metric_key])
             for class_name in classes
         ]
 
@@ -53,6 +56,7 @@ def create_comparison_chart(
                 y=values,
                 text=[f"{value:.3f}" for value in values],
                 textposition="auto",
+                cliponaxis=False,
             )
         )
 
@@ -60,13 +64,25 @@ def create_comparison_chart(
         title=title,
         xaxis_title="Minecraft mob",
         yaxis_title="Score",
-        yaxis=dict(range=[0, 1.05]),
+        yaxis=dict(range=[0, 1.08], tickformat=".0%"),
         barmode="group",
         template="plotly_white",
         legend_title="Metric",
+        font=dict(size=13),
+        margin=dict(l=80, r=40, t=90, b=80),
+        width=1400,
+        height=800,
     )
 
-    figure.write_html(str(output_path), include_plotlyjs=True)
+    figure.write_image(
+        str(output_path),
+        format="png",
+        width=1400,
+        height=800,
+        scale=2,
+    )
+
+    print(f"Saved: {output_path}")
 
 
 def main() -> None:
@@ -79,6 +95,7 @@ def main() -> None:
         for class_name in class_order
         if class_name not in per_class
     ]
+
     if missing_classes:
         raise ValueError(
             f"Evaluation report is missing classes: {missing_classes}"
@@ -92,7 +109,7 @@ def main() -> None:
         metric_keys=["precision", "recall"],
         labels=["Precision", "Recall"],
         title="YOLOv8n — Precision vs Recall by Class",
-        output_path=OUTPUT_DIR / "detection_precision_recall.html",
+        output_path=OUTPUT_DIR / "detection_precision_recall.png",
     )
 
     create_comparison_chart(
@@ -101,10 +118,10 @@ def main() -> None:
         metric_keys=["map50", "map50_95"],
         labels=["mAP@50", "mAP@50–95"],
         title="YOLOv8n — Mean Average Precision by Class",
-        output_path=OUTPUT_DIR / "detection_map_comparison.html",
+        output_path=OUTPUT_DIR / "detection_map_comparison.png",
     )
 
-    print(f"Charts saved to: {OUTPUT_DIR}")
+    print(f"\nPNG charts saved to: {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":
